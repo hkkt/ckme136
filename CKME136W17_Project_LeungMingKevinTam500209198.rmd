@@ -1,12 +1,11 @@
 ---
 title: "CKME136 W17 Capstone Project"
 author: "Leung Ming Kevin Tam ID 500209198"
-date: "March 19, 2017"
+date: "April 12, 2017"
 output: pdf_document
 ---
 
 ```{r IMPORTDATA, echo=TRUE}
-setwd("D:/OneDrive/Dropbox/CKME136")
 tax06.data<-read.csv(file="property_tax_report_csv2006.csv",header=T,sep=",")
 tax07.data<-read.csv(file="property_tax_report_csv2007.csv",header=T,sep=",")
 tax08.data<-read.csv(file="property_tax_report_csv2008.csv",header=T,sep=",")
@@ -20,20 +19,16 @@ tax15.data<-read.csv(file="property_tax_report_csv2015.csv",header=T,sep=",")
 tax16.data<-read.csv(file="property_tax_report_csv2016.csv",header=T,sep=",")
 tax17.data<-read.csv(file="property_tax_report.csv",header=T,sep=",")
 ```
-check for na fields
-```{r CHECKNA, results='hide'}
-tax06.data[is.na(tax06.data$TAX_ASSESSMENT_YEAR),]
-tax07.data[is.na(tax07.data$TAX_ASSESSMENT_YEAR),]
-tax08.data[is.na(tax08.data$TAX_ASSESSMENT_YEAR),]
-tax09.data[is.na(tax09.data$TAX_ASSESSMENT_YEAR),]
-tax10.data[is.na(tax10.data$TAX_ASSESSMENT_YEAR),]
-tax11.data[is.na(tax11.data$TAX_ASSESSMENT_YEAR),]
-tax12.data[is.na(tax12.data$TAX_ASSESSMENT_YEAR),]
-tax13.data[is.na(tax13.data$TAX_ASSESSMENT_YEAR),]
-tax14.data[is.na(tax14.data$TAX_ASSESSMENT_YEAR),]
-tax15.data[is.na(tax15.data$TAX_ASSESSMENT_YEAR),]
-tax16.data[is.na(tax16.data$TAX_ASSESSMENT_YEAR),]
-tax17.data[is.na(tax17.data$TAX_ASSESSMENT_YEAR),]
+check for NA on TAX_ASSESSMENT_YEAR fields
+```{r CHECKNA, echo=TRUE}
+sum(is.na(tax06.data$TAX_ASSESSMENT_YEAR))
+sum(is.na(tax07.data$TAX_ASSESSMENT_YEAR))
+sum(is.na(tax08.data$TAX_ASSESSMENT_YEAR))
+sum(is.na(tax09.data$TAX_ASSESSMENT_YEAR))
+sum(is.na(tax10.data$TAX_ASSESSMENT_YEAR))
+sum(is.na(tax11.data$TAX_ASSESSMENT_YEAR))
+sum(is.na(tax12.data$TAX_ASSESSMENT_YEAR))
+sum(is.na(tax13.data$TAX_ASSESSMENT_YEAR))
 ```
 confirm that 5566 records for tax14.data, 5478 records for tax15.data, 3734 records for tax16.data, 1024 records for tax17.data are missing values of TAX_ASSESSMENT_YEAR column
 ```{r NUMOFNA, echo=TRUE}
@@ -49,7 +44,7 @@ tax15.data$TAX_ASSESSMENT_YEAR[is.na(tax15.data$TAX_ASSESSMENT_YEAR)] <- 2015
 tax16.data$TAX_ASSESSMENT_YEAR[is.na(tax16.data$TAX_ASSESSMENT_YEAR)] <- 2016
 tax17.data$TAX_ASSESSMENT_YEAR[is.na(tax17.data$TAX_ASSESSMENT_YEAR)] <- 2017
 ```
-binding all tax datasets
+binding all datasets
 ```{r COMBINEDATASETS, echo=TRUE}
 tax.data <- rbind(tax06.data,tax07.data)
 tax.data <- rbind(tax.data,tax08.data)
@@ -59,31 +54,36 @@ tax.data <- rbind(tax.data,tax11.data)
 tax.data <- rbind(tax.data,tax12.data)
 tax.data <- rbind(tax.data,tax13.data)
 ```
-add back missing columns for tax06.data to tax13.data
+add back missing columns from the datasets of tax06.data to tax13.data to matching up with those of tax14.data to tax17.data
 ```{r ADDCOL, echo=TRUE}
-tax.data$ZONE_NAME <- ""
-tax.data$ZONE_CATEGORY <- ""
-tax.data$PREVIOUS_LAND_VALUE <- ""
-tax.data$PREVIOUS_IMPROVEMENT_VALUE <- ""
-
+tax.data$ZONE_NAME <- NA
+tax.data$ZONE_CATEGORY <- NA
+tax.data$PREVIOUS_LAND_VALUE <- NA
+tax.data$PREVIOUS_IMPROVEMENT_VALUE <- NA
+```
+binding the rest
+```{r echo=TRUE}
 tax.data <- rbind(tax.data,tax14.data)
 tax.data <- rbind(tax.data,tax15.data)
 tax.data <- rbind(tax.data,tax16.data)
 tax.data <- rbind(tax.data,tax17.data)
 ```
-remove records with empty CURRENT_LAND_VALUE (first check how many rows has empty CURRENT_LAND_VALUE)
+remove records with empty CURRENT_LAND_VALUE
 ```{r REMOVENA, echo=TRUE}
 sum(is.na(tax.data$CURRENT_LAND_VALUE))
-tax.data1 <- tax.data[!(is.na(tax.data$CURRENT_LAND_VALUE)),]
+tax.data <- tax.data[!(is.na(tax.data$CURRENT_LAND_VALUE)),]
+sum(is.na(tax.data$CURRENT_LAND_VALUE))
 ```
-
+Appraoch 1
+create simple linear regression with one independent variable, TAX_ASSESSMENT_YEAR (x) to predict the future value of CURRENT_LAND_VALUE (y)
 ```{r XYvec, echo=TRUE}
-x <- as.vector(tax.data1$TAX_ASSESSMENT_YEAR)
-y <- as.vector(tax.data1$CURRENT_LAND_VALUE)
+x <- as.vector(tax.data$TAX_ASSESSMENT_YEAR)
+y <- as.vector(tax.data$CURRENT_LAND_VALUE)
 ```
 create formula with Linear Regression for the prediction to CURRENT_LAND_VALUE and plot
 ```{r LM, echo=TRUE}
-lm.price = lm(formula = y ~ x, data = tax.data1)
+lm.price = lm(formula = y ~ x, data = tax.data)
+lm.price
 plot(x,y, xlab="Year", ylab="LANDVALUE")
 abline(lm.price)
 ```
@@ -99,6 +99,193 @@ Predicated CURRENT_LAND_VALUE for 2020 is
 ```{r echo=TRUE}
 -161818411 + (2020 * 80907)
 ```
-
+can see some extreme outliers
 ```{r echo=TRUE}
+summary(tax.data$CURRENT_LAND_VALUE)
+boxplot(tax.data$CURRENT_LAND_VALUE)
 ```
+replace outliers with NA and remove them
+```{r echo=TRUE}
+tax.data$CURRENT_LAND_VALUE <- ifelse(tax.data$CURRENT_LAND_VALUE %in% boxplot.stats(tax.data$CURRENT_LAND_VALUE)$out, NA, tax.data$CURRENT_LAND_VALUE)
+tax.data <- tax.data[!(is.na(tax.data$CURRENT_LAND_VALUE)),]
+sum(is.na(tax.data$CURRENT_LAND_VALUE))
+boxplot(tax.data$CURRENT_LAND_VALUE)
+```
+re-create the vectors
+```{r reXYvec, echo=TRUE}
+x <- as.vector(tax.data$TAX_ASSESSMENT_YEAR)
+y <- as.vector(tax.data$CURRENT_LAND_VALUE)
+```
+re-create formula with Linear Regression for the prediction to CURRENT_LAND_VALUE and plot
+```{r LM-approach1, echo=TRUE}
+lm.price = lm(formula = y ~ x, data = tax.data)
+lm.price
+plot(x,y, xlab="Year", ylab="LANDVALUE")
+abline(lm.price)
+```
+Predicated CURRENT_LAND_VALUE for 2018, 2019 and 2020 are:
+```{r echo=TRUE}
+predict_years <- data.frame(x = c(2018, 2019, 2020))
+predict(lm.price, predict_years)
+```
+Approach 1a
+extract the first 3 characters of PROPERTY_POSTAL_CODE as FSA (Forward Sortation Area) and use it to group the predicted land value by neighbourhood
+```{r echo=TRUE}
+tax.dataFSA <- tax.data
+tax.dataFSA$FSA <- substr(tax.dataFSA$PROPERTY_POSTAL_CODE, 1, 3)
+```
+validating FSAs and removing invalid or non-Vancouver FSAs
+```{r echo=TRUE}
+unique(tax.dataFSA$FSA,,)
+FSAtoremove <- c("", "Z 8", "Z 9", "Z 2", "Z 4", "Z15", "Z 3", "Z 6", "Z 1", "M5W", "Z16", "Z10", "Z 5", " V5")
+aFSAtmp <- unique(tax.dataFSA$FSA,,)
+idxFSAtoremove = which(aFSAtmp %in% FSAtoremove)
+aFSA <- aFSAtmp[-idxFSAtoremove]
+```
+separate the dataset by FSA and build Linear regression for each of them, then Predicated CURRENT_LAND_VALUE for 2018, 2019 and 2020 are:
+```{r LM-approach1a, echo=TRUE}
+for (FSA in aFSA) {
+  newdf <- paste("df.", FSA, sep = "")
+  assign(newdf, tax.dataFSA[tax.dataFSA$FSA == FSA,])
+}
+
+newdf <- NULL
+newlm <- NULL
+predict_years <- data.frame(TAX_ASSESSMENT_YEAR = c(2018, 2019, 2020))
+for (i in 1:29) {
+  newdf[i] <- paste("df.", aFSA[i], sep = "")
+  assign(newdf[i], tax.dataFSA[tax.dataFSA$FSA == aFSA[i],])
+  newlm[i] <- paste("lm.", aFSA[i], sep = "")
+  assign(newlm[i], lm(formula = CURRENT_LAND_VALUE ~ TAX_ASSESSMENT_YEAR, data = get(newdf[i])))
+  print(newlm[i])
+  print(get(newlm[i]))
+  newlm_tmp <- get(newlm[i])
+  newpredict <- predict(newlm_tmp, predict_years)
+  print(newpredict)
+}
+
+```
+Approach 2
+use only last 4 year datasets for multiple regression as first 8 year datasets do not even have PREVIOUS_LAND_VALUE demographics
+```{r echo=TRUE}
+tax.data1 <- rbind(tax14.data,tax15.data)
+tax.data1 <- rbind(tax.data1,tax16.data)
+tax.data1 <- rbind(tax.data1,tax17.data)
+```
+remove records with empty CURRENT_LAND_VALUE and PREVIOUS_LAND_VALUE
+```{r REMOVENA2, echo=TRUE}
+sum(is.na(tax.data1$CURRENT_LAND_VALUE))
+sum(is.na(tax.data1$PREVIOUS_LAND_VALUE))
+tax.data1 <- tax.data1[!(is.na(tax.data1$CURRENT_LAND_VALUE)),]
+tax.data1 <- tax.data1[!(is.na(tax.data1$PREVIOUS_LAND_VALUE)),]
+sum(is.na(tax.data1$CURRENT_LAND_VALUE))
+sum(is.na(tax.data1$PREVIOUS_LAND_VALUE))
+```
+building another regression with multiple indepedent variable 
+```{r LM-approach2, echo=TRUE}
+lm.price1 = lm(formula = CURRENT_LAND_VALUE ~ TAX_ASSESSMENT_YEAR + PREVIOUS_LAND_VALUE, data = tax.data1)
+lm.price1
+```
+extract mean and median of CURRENT_LAND_VALUE from 2016 dataset for fitting the following regression prediction
+```{r echo=TRUE}
+meanCLV2016 <- mean(tax.data$CURRENT_LAND_VALUE[tax.data$TAX_ASSESSMENT_YEAR == 2016])
+medianCLV2016 <- median(tax.data$CURRENT_LAND_VALUE[tax.data$TAX_ASSESSMENT_YEAR == 2016])
+```
+Predicated CURRENT_LAND_VALUE for 2018, 2019 and 2020 and for the mean/median of 2016's CURRENT_LAND_VALUE are:
+```{r echo=TRUE}
+predict_years_CLV1 <- data.frame(TAX_ASSESSMENT_YEAR = c(2018, 2019, 2020), PREVIOUS_LAND_VALUE = meanCLV2016)
+predict(lm.price1, predict_years_CLV1)
+predict_years_CLV2 <- data.frame(TAX_ASSESSMENT_YEAR = c(2018, 2019, 2020), PREVIOUS_LAND_VALUE = medianCLV2016)
+predict(lm.price1, predict_years_CLV2)
+```
+
+Approach 2a
+built another sets of multiple regressions with grouping of FSA, and Predicated CURRENT_LAND_VALUE for 2018, 2019 and 2020 and for the mean/median of 2016's CURRENT_LAND_VALUE are:
+```{r LM-approach2a, echo=TRUE}
+tax.data1FSA <- tax.data1
+tax.data1FSA$FSA <- substr(tax.data1FSA$PROPERTY_POSTAL_CODE, 1, 3)
+
+newdf1 <- NULL
+newlm1 <- NULL
+for (i in 1:29) {
+  newdf1[i] <- paste("df1.", aFSA[i], sep = "")
+  assign(newdf1[i], tax.data1FSA[tax.data1FSA$FSA == aFSA[i],])
+  newlm1[i] <- paste("lm1.", aFSA[i], sep = "")
+  assign(newlm1[i], lm(formula = CURRENT_LAND_VALUE ~ TAX_ASSESSMENT_YEAR + PREVIOUS_LAND_VALUE, data = get(newdf1[i])))
+  print(newlm1[i])
+  print(get(newlm1[i]))
+  newlm_tmp <- get(newlm[i])
+  newpredict1 <- predict(newlm_tmp, predict_years_CLV1)
+  print(newpredict1)
+  newpredict2 <- predict(newlm_tmp, predict_years_CLV2)
+  print(newpredict2)
+}
+```
+Comparison of residuals of each regression
+Apporach 1 and 2
+```{r rmse+mse_simple, echo=TRUE}
+tax.data <- tax.data[!(is.na(tax.data$CURRENT_LAND_VALUE)),]
+price.actual = tax.data$CURRENT_LAND_VALUE
+price.predicted = fitted(lm.price)
+price.error = price.actual-price.predicted
+price.rmse = sqrt(mean(price.error^2))
+price.rmse
+price.mae = mean(abs(price.error))
+price.mae
+
+price1.actual = tax.data1$CURRENT_LAND_VALUE
+price1.predicted = fitted(lm.price1)
+price1.error = price1.actual-price1.predicted
+price1.rmse = sqrt(mean(price1.error^2))
+price1.rmse
+price1.mae = mean(abs(price1.error))
+price1.mae
+```
+Comparison of residuals of each regression
+Apporach 1a and 2a
+```{r rmse+mse_multiple, echo=TRUE}
+newactual <- NULL
+newpredicted <- NULL
+newerror <- NULL
+newrmse <- NULL
+newmae <- NULL
+for (i in 1:29) {
+  newactual[i] <- paste("price.actual.", aFSA[i], sep = "")
+  assign(newactual[i], get(newdf[i])$CURRENT_LAND_VALUE)
+  newpredicted[i] <- paste("price.predicted.", aFSA[i], sep = "")
+  newlm_tmp <- get(newlm[i])
+  assign(newpredicted[i], fitted(newlm_tmp))
+  newerror[i] <- paste("price.error.", aFSA[i], sep = "")
+  assign(newerror[i], get(newactual[i])-get(newpredicted[i]))
+  newrmse[i] <- paste("price.rmse.", aFSA[i], sep = "")
+  assign(newrmse[i], sqrt(mean(get(newerror[i])^2)))
+  print(newrmse[i])
+  print(get(newrmse[i]))
+  newmae[i] <- paste("price.mae.", aFSA[i], sep = "")
+  assign(newmae[i], mean(abs(get(newerror[i]))))
+  print(newmae[i])
+  print(get(newmae[i]))
+}
+
+newactual1 <- NULL
+newpredicted1 <- NULL
+newerror1 <- NULL
+newrmse1 <- NULL
+newmae1 <- NULL
+for (i in 1:29) {
+  newactual1[i] <- paste("price1.actual.", aFSA[i], sep = "")
+  assign(newactual1[i], get(newdf1[i])$CURRENT_LAND_VALUE)
+  newpredicted1[i] <- paste("price1.predicted.", aFSA[i], sep = "")
+  newlm_tmp <- get(newlm1[i])
+  assign(newpredicted1[i], fitted(newlm_tmp))
+  newerror1[i] <- paste("price1.error.", aFSA[i], sep = "")
+  assign(newerror1[i], get(newactual1[i])-get(newpredicted1[i]))
+  newrmse1[i] <- paste("price1.rmse.", aFSA[i], sep = "")
+  assign(newrmse1[i], sqrt(mean(get(newerror1[i])^2)))
+  print(newrmse1[i])
+  print(get(newrmse1[i]))
+  newmae1[i] <- paste("price1.mae.", aFSA[i], sep = "")
+  assign(newmae1[i], mean(abs(get(newerror1[i]))))
+  print(newmae1[i])
+  print(get(newmae1[i]))
+}
